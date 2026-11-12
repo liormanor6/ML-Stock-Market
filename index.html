@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Report: Predicting Stock Market Movements Using Machine Learning</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1, h2, h3 { color: #333366; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        table, th, td { border: 1px solid #999; }
+        th, td { padding: 8px; text-align: left; }
+        pre { background: #f4f4f4; padding: 10px; border-left: 5px solid #ccc; }
+        code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+        a { color: #0066cc; }
+    </style>
+</head>
+<body>
+<h1>Final Report: Predicting Stock Market Movements Using Machine Learning</h1>
+
+<h2>1. Introduction/Background</h2>
+<p>Financial markets exhibit complex, dynamic behavior influenced by numerous factors such as economic indicators, investor sentiment, and technical trends. Traditional methods like fundamental and technical analysis have been widely used, but machine learning (ML) has emerged as a powerful alternative to improve predictive accuracy. Several studies have explored the use of ML techniques such as Support Vector Machines (SVM), Long Short-Term Memory (LSTM) networks, and ensemble methods to forecast stock prices or price movements.</p>
+<p>For this project, we developed and evaluated several machine learning models to predict the daily directional movement (up/stay vs. down) of the Dow Jones Industrial Average (DJIA) using historical market data and sentiment analysis derived from news headlines. The goal was to determine if incorporating news sentiment alongside price data could improve prediction accuracy compared to simpler models or random chance.</p>
+
+<h3>Literature Review</h3>
+<ol>
+<li><strong>Patel et al. (2015)</strong> applied ML techniques, including Random Forests and SVM, to predict stock trends, demonstrating improved accuracy over traditional methods. Their work highlighted the potential of combining different feature types.</li>
+<li><strong>Fischer and Krauss (2018)</strong> employed LSTM networks for financial time series forecasting and found deep learning superior to shallow models, particularly for capturing temporal dependencies inherent in market data.</li>
+<li><strong>Chen et al. (2021)</strong> explored ensemble learning and reinforcement learning for stock trading strategies, achieving competitive performance and showcasing the benefits of combining multiple models or learning approaches.</li>
+<li><strong>Sun, J. (2016)</strong> provided the core dataset combining historical DJIA prices with daily news headlines, enabling the integration of textual sentiment features.</li>
+<li><strong>Valour, Maximus (2025)</strong> demonstrated methods for sentiment analysis on stock market news, providing a basis for our feature engineering approach using VADER and TextBlob.</li>
+</ol>
+
+<h3>Dataset Description</h3>
+<p>We utilized two primary datasets sourced from Kaggle:</p>
+<ol>
+<li><strong>upload_DJIA_table.csv:</strong> Contains daily OHLC prices, Volume, and Adjusted Close for the DJIA index.</li>
+<li><strong>Combined_News_DJIA.csv:</strong> Contains the top 25 news headlines for each date, along with a binary label indicating price movement.</li>
+</ol>
+<p>These datasets were merged using an inner join on the 'Date' attribute.</p>
+
+<h2>2. Problem Definition</h2>
+<h3>Problem</h3>
+<p>Stock market prediction, specifically forecasting the direction of price movement (classification), is inherently challenging due to market volatility, noise from numerous unpredictable events, and complex, often non-linear dependencies between influencing factors. The objective of this project is to classify whether the DJIA index will increase/stay neutral ('1') or decrease ('0') on a given day, based on historical price data and sentiment extracted from news headlines published up to that day.</p>
+<h3>Motivation</h3>
+<p>Developing models that can accurately predict stock market direction, even slightly better than chance, holds significant value for investors and financial institutions. It can inform trading strategies, aid in risk management, and potentially lead to improved investment returns. Machine learning offers a powerful toolkit to analyze vast amounts of data, uncover subtle patterns missed by traditional analysis, and potentially capture the complex interplay between market sentiment and price action.</p>
+
+<h2>3. Methods</h2>
+<h3>Data Preprocessing Methods</h3>
+<ol>
+    <li><Strong>Sentiment Extraction (VADER)</Strong></li>
+<ul>
+    <li>For each date, the top 25 news headlines were concatenated into a single text string.</li>
+    <li>The VADER (Valence Aware Dictionary and sEntiment Reasoner) sentiment analysis tool was applied to this combined string.</li>
+    <li>VADER provides scores for positive, negative, and neutral sentiment, along with a compound score (a normalized, weighted composite). These four scores were added as features to our dataset for each date.</li>
+    <li>Rationale: VADER is specifically attuned to sentiments expressed in social media and short texts, making it suitable for news headlines. We hypothesized that the overall market sentiment, quantifiable through these scores, is a significant driver of short-term price movements.</li>
+</ul>
+
+<li><Strong>Subjectivity/Polarity Rating (TextBlob)</Strong></li>
+<ul>
+    <li>In addition to VADER, the TextBlob library was used to analyze the concatenated headlines for each date.</li>
+    <li>TextBlob calculates two metrics:
+        <ul>
+            <li><strong>Polarity:</strong> A float within [-1.0, 1.0] indicating negative vs. positive sentiment.</li>
+            <li><strong>Subjectivity:</strong> A float within [0.0, 1.0] where 0.0 is very objective and 1.0 is very subjective.</li>
+        </ul>
+    </li>
+    <li>These two scores were also added as features to the dataset.</li>
+    <li>Rationale: Polarity provides an alternative measure of sentiment, while subjectivity helps gauge whether the news coverage is primarily factual or opinion-based. Highly subjective or opinionated news might influence investor behavior differently than objective reporting.</li>
+</ul>
+
+
+<li><Strong>Feature Scaling</Strong></li>
+<ul>
+    <li>Numerical features (OHLC prices, Volume, VADER scores, TextBlob scores) were scaled using standardization (subtracting the mean and dividing by the standard deviation) to ensure that features with larger values did not disproportionately influence models sensitive to feature magnitude (like PCA, CNN, LSTM).</li>
+</ul>
+
+<li><Strong>Data Splitting</Strong></li>
+<ul>
+    <li>The dataset was split chronologically into training and testing sets to simulate real-world prediction scenarios where future data is unknown.</li>
+    <li>An 80% training and 20% testing split was used for model evaluation.</li>
+</ul>
+
+<li><Strong>Principal Component Analysis (PCA)</Strong></li>
+<ul>
+    <li>PCA was applied to the combined feature set (scaled price data and sentiment scores) before feeding data into the LSTM model, as explored during the midterm.</li>
+    <li>Rationale: The goal was to reduce dimensionality, remove multicollinearity between related features (e.g., Open, High, Low, Close prices; different sentiment scores), and potentially reduce noise, thereby improving the efficiency and generalization of the subsequent model. We aimed to retain approximately 95% of the variance.</li>
+</ul>
+
+</ol>
+
+<h3>Machine Learning Models</h3>
+<p>We implemented and evaluated three different machine learning models suitable for this classification task:</p>
+<il>
+<li><strong>Random Forest (RF):</strong> An ensemble method that builds multiple decision trees on different subsets of the data (using bootstrapping) and features, averaging their predictions. Known for its robustness and ability to handle non-linear relationships without extensive hyperparameter tuning. Requires careful feature engineering but lacks inherent temporal awareness.</li>
+<li><strong>1D Convolutional Neural Network (CNN):</strong> A deep learning model often used for sequence data. 1D CNNs can learn spatial hierarchies of features within sequences, potentially identifying predictive patterns in recent price/sentiment history. It focuses on local patterns within the input sequence.</li>
+<li><strong>Long Short-Term Memory (LSTM) Network:</strong> A type of Recurrent Neural Network (RNN) specifically designed to handle long-range dependencies in sequential data. LSTMs use memory cells and gates to control information flow, allowing them to remember relevant past information (like market trends or sustained sentiment) over extended periods.</li>
+<ul>
+    <li>Input/Sequence Handling: The model takes sequences of past data points as input (e.g., the last N days). Each data point in the sequence consists of features like scaled OHLC prices, volume, and sentiment scores, or the principal components derived from these features via PCA. To predict the market direction for day T+1, it processes the sequence from days T-N+1 to T, updating its internal state at each step based on the information from that day. For predictions on the test set, a sliding window approach is used, ensuring the model only uses past information available up to day T to predict day T+1.</li>
+</ul>
+</il>
+<p>Supervised Learning Models: Random Forest, 1D CNN, LSTM Unsupervised Learning Technique: PCA (used for feature engineering/dimensionality reduction prior to LSTM modeling)</p>
+
+<h2>4. Results and Discussion</h2>
+<h3>Quantitative Metrics</h3>
+<p>The following metrics were used to evaluate the performance of our classification models on the held-out test set:</p>
+<ul>
+    <li><strong>Accuracy:</strong> The overall proportion of correct predictions (both 'Up' and 'Down').</li>
+    <li><strong>Precision:</strong> The proportion of predicted 'Up' movements that were actually 'Up'. Measures the accuracy of positive predictions.</li>
+    <li><strong>Recall (Sensitivity):</strong> The proportion of actual 'Up' movements that were correctly identified. Measures how well the model finds positive cases.</li>
+    <li><strong>F1-Score:</strong> The harmonic mean of Precision and Recall, providing a single score that balances both metrics.</li>
+</ul>
+<pre>
+Accuracy = (TP + TN) / (TP + TN + FP + FN)
+Precision = TP / (TP + FP)
+Recall = TP / (TP + FN)
+F1 = 2 * (Precision * Recall) / (Precision + Recall)
+</pre>
+<p>(Where TP = True Positives, TN = True Negatives, FP = False Positives, FN = False Negatives, with '1' (Up/Stay) as the positive class)</p>
+
+<h3>Model Implementation Details</h3>
+
+<h4>Random Forest</h4>
+<ul>
+    <li><strong>Features:</strong> Scaled OHLC, Volume, VADER scores (compound, positive, negative, neutral), TextBlob scores (polarity, subjectivity).</li>
+    <li><strong>Bootstrapping:</strong> Enabled.</li>
+    <li><strong>Number of Estimators (Trees):</strong> 300.</li>
+    <li><strong>Minimum Samples per Leaf:</strong> 5.</li>
+    <li><strong>Data Split:</strong> 80% training, 20% testing (chronological).</li>
+</ul>
+
+<h4>1D Convolutional Neural Network (CNN)</h4>
+<ul>
+    <li><strong>Input Shape:</strong> Sequences of recent daily features (e.g., last 5 days features). Features included scaled OHLC, Volume, and sentiment scores.</li>
+    <li><strong>Architecture:</strong>
+        <ul>
+            <li>Conv1D layer: 32 filters, kernel size of 3, ReLU activation.</li>
+            <li>MaxPooling1D layer: Pool size of 2.</li>
+            <li>Dropout layer: Rate p = 0.2.</li>
+            <li>Flatten layer.</li>
+            <li>Dense layer: Hidden layer (e.g., 32 units), ReLU activation.</li>
+            <li>Dense output layer: 1 unit, Sigmoid activation.</li>
+        </ul>
+    </li>
+    <li><strong>Optimizer:</strong> Adam.</li>
+    <li><strong>Loss Function:</strong> Binary Cross-Entropy.</li>
+    <li><strong>Hyperparameters:</strong> Epochs = 30, Batch Size = 32.</li>
+    <li><strong>Data Split:</strong> 80% training, 20% testing (chronological, sequence structure maintained).</li>
+</ul>
+
+<h4>Long Short-Term Memory (LSTM) Network</h4>
+<ul>
+    <li><strong>Input Shape:</strong> Sequences of recent daily features (e.g., last 10 days). Features used were the principal components derived from PCA applied to scaled OHLC, Volume, and sentiment scores.</li>
+    <li><strong>Architecture:</strong>
+        <ul>
+            <li>LSTM layer: 64 units.</li>
+            <li>Dropout layer: Rate p = 0.2.</li>
+            <li>Dense layer: 32 units, ReLU activation.</li>
+            <li>Dense output layer: 1 unit, Sigmoid activation.</li>
+        </ul>
+    </li>
+    <li><strong>Optimizer:</strong> Adam.</li>
+    <li><strong>Loss Function:</strong> Binary Cross-Entropy.</li>
+    <li><strong>Hyperparameters:</strong> Epochs = 20, Batch Size = 32.</li>
+    <li><strong>Data Split:</strong> 80% training, 20% testing (chronological, sequence structure maintained).</li>
+</ul>
+
+<h3>Data Visualization</h3>
+<p><strong>DJIA Candlestick Chart (2008-2016):</strong></p>
+<p><img src="DJIA Candlestick Chart - image_353587.png" alt="DJIA Candlestick Chart" style="max-width:100%; height:auto; border:1px solid #ccc; padding:5px;"></p>
+<p><strong>Description:</strong> This plot shows the daily price movements (Open, High, Low, Close represented by candlesticks) and trading volume (bars below) for the Dow Jones Industrial Average (DJIA) from August 2008 to July 2016. It visualizes the significant market downturn in late 2008/early 2009 followed by a general upward trend through the rest of the period. Periods of increased volatility (longer candlesticks, higher volume) are also visible. This provides context for the market conditions during which our data was generated.</p>
+
+<p><strong>PCA Scree Plot:</strong></p>
+<p><img src="PCA Scree Plot.png"alt="PCA Screen Plot" style="max-width:75%; height:auto; border:1px solid #ccc; padding:5px;"></p>
+<p><strong>Description:</strong> The scree plot displays the proportion of variance explained by each principal component, ordered from highest to lowest. There is a sharp drop ('elbow') after the first component, indicating it captures a large majority of the variance. Subsequent components explain progressively smaller amounts of variance. This plot visually supports the idea that a small number of components can represent a large portion of the information in the original features, justifying the use of PCA for dimensionality reduction. Based on retaining ~95% variance across all features (price and sentiment), 6 components were selected for the LSTM input.</p>
+
+<p><strong>PCA Biplot (PC1 vs PC2):</strong></p>
+<p><img src="PCA Biplot - image_35318b.png"alt="PCA Biplot" style="max-width:75%; height:auto; border:1px solid #ccc; padding:5px;"></p>
+<p><strong>Description:</strong> This biplot visualizes the data points (observations) projected onto the first two principal components (PC1 and PC2), likely derived from price and volume features. The red vectors represent the original features, showing how they contribute to these components.</p>
+<ul>
+    <li>Features like 'High', 'Low', 'Open', 'Close' (clustered tightly together) point strongly along the negative PC1 axis, indicating they are highly correlated and are the primary drivers of PC1, representing the general price level or trend.</li>
+    <li>The 'Volume' feature points strongly along the positive PC2 axis, suggesting it captures variance largely independent of the price features in PC1.</li>
+    <li>The spread of the blue observation points shows the distribution of the data in this reduced two-dimensional space, with most observations clustered at lower PC2 values.</li>
+</ul>
+
+<h3>Principal Component Analysis (PCA) Results</h3>
+<p>PCA was applied to the combined feature set (scaled price data and sentiment scores) prior to LSTM modeling to reduce dimensionality.</p>
+<ul>
+    <li><strong>Number of principal components selected:</strong> 6</li>
+    <li><strong>Total variance explained by 6 components:</strong> ~95.7%</li>
+    <li><Strong>Component Breakdown & Analysis:</Strong></li>
+    <ul>
+        <li><strong>PC1 (37.4% variance):</strong> Dominated by price features (Low, Open, High). Captures general market level/trend.</li>
+        <li><strong>PC2 (18.9% variance):</strong> Dominated by VADER sentiment (negative, neutral, compound). Captures primary sentiment dimension.</li>
+        <li><strong>PC3 (15.8% variance):</strong> Dominated by VADER positive, VADER neutral, TextBlob polarity. Captures another aspect of sentiment, possibly positivity intensity.</li>
+        <li><strong>PC4 (9.5% variance):</strong> Dominated by TextBlob subjectivity. Captures the opinion vs. factual nature of news.</li>
+        <li><strong>PC5 (8.5% variance):</strong> Dominated by TextBlob polarity and VADER compound. Captures interaction between polarity and overall VADER score.</li>
+        <li><strong>PC6 (5.5% variance):</strong> Dominated by VADER positive and compound. Captures further nuance in positive sentiment.</li>
+    </ul>
+</ul>
+<p><strong>Conclusion:</strong> PCA successfully reduced the feature space while retaining most information. The components clearly separate price dynamics (PC1) from various dimensions of sentiment and text characteristics (PC2-PC6), confirming their contribution to data variance and providing a potentially less noisy, decorrelated input set for the LSTM.</p>
+
+<h3>Model Performance on Test Set</h3>
+<p>Based on our experiments, the following performance metrics were achieved on the held-out test set:</p>
+<ul>
+    <li><strong>Random Forest:</strong>
+        <ul>
+            <li>Accuracy: 49%</li>
+            <li>Precision: 0.52</li>
+            <li>Recall: 0.52</li>
+            <li>F1-Score: 0.52</li>
+        </ul>
+    </li>
+    <li><strong>1D CNN:</strong>
+        <ul>
+            <li>Accuracy: 56%</li>
+            <li>Precision: 0.57</li>
+            <li>Recall: 0.77</li>
+            <li>F1-Score: 0.65</li>
+        </ul>
+    </li>
+    <li><strong>LSTM:</strong>
+        <ul>
+            <li>Accuracy: 53%</li>
+            <li>Precision: 0.56</li>
+            <li>Recall: 0.77</li>
+            <li>F1-Score: 0.65</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>Model Comparison Summary</h3>
+<table>
+<thead>
+<tr><th>Model</th><th>Type</th><th>Temporal Awareness</th><th>Needs Feature Engineering</th><th>Pros</th><th>Cons</th><th>Accuracy</th><th>F1 Score</th></tr>
+</thead>
+<tbody>
+<tr><td>LSTM</td><td>Recurrent</td><td>Yes</td><td>No</td><td>Captures long-term dependencies</td><td>Slower to train, harder to tune</td><td>53%</td><td>0.65</td></tr>
+<tr><td>Random Forest</td><td>Tree Ensemble</td><td>No</td><td>Yes</td><td>Interpretable, robust</td><td>No time modeling</td><td>49%</td><td>0.52</td></tr>
+<tr><td>1D CNN</td><td>Deep Learning</td><td>Local</td><td>Some</td><td>Fast, pattern detection</td><td>Less interpretable</td><td>56%</td><td>0.65</td></tr>
+</tbody>
+</table>
+
+<h3>Discussion</h3>
+<p>The results indicate that both the 1D CNN and LSTM models achieved the highest performance in terms of F1-Score (0.65), with the 1D CNN also achieving the best accuracy (56%). The Random Forest model performed noticeably worse, suggesting it struggled to capture the predictive signals as effectively as the deep learning approaches for this specific task.</p>
+<ul>
+    <li><strong>1D CNN:</strong> Its success suggests that local patterns in the sequence of recent price and sentiment data are highly informative. Its relative speed and strong pattern detection capabilities proved advantageous.</li>
+    <li><strong>LSTM:</strong> Achieved a comparable F1-Score to the CNN, demonstrating its strength in modeling temporal dependencies, potentially longer-range ones than the CNN. Its explicit design for sequences and ability to handle inputs without extensive feature engineering (especially post-PCA) are advantages, though training complexity is higher.</li>
+    <li><strong>Random Forest:</strong> While robust and interpretable, its lack of inherent temporal awareness seems to be a limitation for this time-series forecasting problem. Its performance indicates that treating each day's features independently is less effective than methods designed for sequential data.</li>
+</ul>
+<p>Comparing the CNN and LSTM, the trade-off appears to be between the CNN's potentially better capture of local patterns (leading to slightly higher accuracy here) and the LSTM's theoretical strength in longer dependencies, both yielding the same F1-Score.</p>
+<p>The inclusion of sentiment features alongside price data appears beneficial, as suggested by the PCA results and the performance of the deep learning models. However, even the best models achieved accuracy levels (53-56%) that, while better than random chance (50%), highlight the inherent difficulty of consistently predicting stock market movements.</p>
+
+<h3>Applicability and Limitations</h3>
+<ul>
+    <li><strong>Prediction Timing:</strong> A key limitation is that the current models use information (news headlines) available during day T to predict the closing price movement at the end of day T relative to day T-1. For a practical trading strategy, the prediction needs to be made before the event occurs. Adapting the models (e.g., predicting day T+1 using only data up to day T, using intraday data, or carefully lagging features) would be necessary to make them actionable for trading. Implementing and backtesting such a strategy involves further complexities (transaction costs, slippage) beyond this project's scope.</li>
+    <li><strong>Target Variable:</strong> The binary classification (up/stay vs. down) simplifies market dynamics.</li>
+    <li><strong>Sentiment Scope:</strong> Sentiment is derived only from the top 25 headlines.</li>
+    <li><strong>Market Regimes:</strong> Models were trained on a specific historical period and may not generalize perfectly to different market conditions.</li>
+    <li><strong>Interpretability:</strong> Deep learning models (CNN, LSTM) are less interpretable than Random Forest.</li>
+</ul>
+
+<h3>Future Work</h3>
+<ul>
+    <li>Implement and test adaptations for an actionable trading strategy (e.g., predicting T+1).</li>
+    <li>Incorporate additional features (macroeconomic, technical indicators).</li>
+    <li>Explore more advanced sentiment analysis techniques.</li>
+    <li>Conduct more extensive hyperparameter tuning.</li>
+    <li>Combine models using ensemble techniques.</li>
+    <li>Test models on different indices or individual stocks.</li>
+</ul>
+
+<h2>5. References</h2>
+<ol>
+    <li>Sun, J. (2016, August). Daily News for Stock Market Prediction, Version 1. Retrieved 3/20/2025 from <a href="https://www.kaggle.com/aaron7sun/stocknews">https://www.kaggle.com/aaron7sun/stocknews</a>.</li>
+    <li>Valour, Maximus. (2025, January). Stock Market Sentiment Analysis, Version 1. Retrieved 3/20/2025 from <a href="https://www.kaggle.com/code/maximusvalor/stock-market-sentiment-analysis">https://www.kaggle.com/code/maximusvalor/stock-market-sentiment-analysis</a>.</li>
+    <li>Patel, J., Shah, S., Thakkar, P., & Kotecha, K. (2015). Predicting stock market index using fusion of machine learning techniques. <em>Expert Systems with Applications</em>, 42(4), 2162-2172.</li>
+    <li>Fischer, T., & Krauss, C. (2018). Deep learning with long short-term memory networks for financial market predictions. <em>European Journal of Operational Research</em>, 270(2), 654-669.</li>
+    <li>Chen, W., Zhang, H., Zhang, W., & He, X. (2021). A survey on stock market prediction using machine learning and statistical techniques. <em>IEEE Access</em>, 9, 15039-15062.</li>
+    <li>Hutto, C.J. & Gilbert, E.E. (2014). VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text. Eighth International Conference on Weblogs and Social Media (ICWSM-14), Ann Arbor, MI, June 2014.</li>
+    <li><a href="https://textblob.readthedocs.io/">TextBlob Documentation</a>.</li>
+</ol>
+
+<h2>6. Gantt Chart</h2>
+<p><a href="https://gtvault-my.sharepoint.com/:x:/g/personal/lmanor3_gatech_edu/EQEjpjbv5GhMqv4rImskUEQBMC-x1_dlydS-XmuTr956hQ?e=s5Yhoi">Project Plan</a></p>
+
+<h2>7. Contributions Table</h2>
+<table>
+<thead>
+<tr><th>Member</th><th>Post-Midterm Contributions</th></tr>
+</thead>
+<tbody>
+<tr><td>Munim</td><td>&lt;Insert&gt;</td></tr>
+<tr><td>Amritesh</td><td>Wrote detailed report and verified preprocessing data.</td></tr>
+<tr><td>Luca</td><td>Fine tuned the models, created the models.</td></tr>
+<tr><td>Lior</td><td>Created Presentation</td></tr>
+<tr><td>Vamsi</td><td>Converted the report from .md file to HTML, github pages.</td></tr>
+</tbody>
+</table>
+
+<h2>8. Project Award Eligibility</h2>
+<p>Opt-in</p>
+</body>
+</html>
