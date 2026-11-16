@@ -11,14 +11,14 @@ class PCA(object):
         self.V = None
 
     def fit(self, X: np.ndarray) ->None:
-        """		
+        """
 		Decompose dataset into principal components by finding the singular value decomposition of the centered dataset X
 		You may use the numpy.linalg.svd function
 		Don't return anything. You can directly set self.U, self.S and self.V declared in __init__ with
 		corresponding values from PCA. See the docstrings below for the expected shapes of U, S, and V transpose
 		
 		Hint: np.linalg.svd by default returns the transpose of V
-		      Make sure you remember to first center your data by subtracting the mean of each feature.
+		    Make sure you remember to first center your data by subtracting the mean of each feature.
 		
 		Args:
 		    X: (N,D) numpy array corresponding to a dataset
